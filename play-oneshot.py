@@ -18,34 +18,42 @@ message_history = [
      'response': 'his eyes are blue'},
      
     {'id': 3,
-     'prompt': 'User: What is my name',
-     'response': 'Ray Bernard'}
+     'prompt': 'User: My name is Ray Bernard',
+     'response': 'Hi Ray Bernard'}
 ]
 
 def create_vector_db(conversations):
     vector_db_name = 'conversations'
     try:
         client.delete_collection(name=vector_db_name)
-    except ValueError as e:
-        pass  # Handle collection not existing
+    except ValueError:
+        pass  # Collection not existing is fine
     
-    # Create or re-create the vector database collection
     vector_db = client.create_collection(name=vector_db_name)
 
     for c in conversations:
         serialized_convo = f'prompt:{c["prompt"]} response:{c["response"]}'
         response = ollama.embeddings(model='nomic-embed-text', prompt=serialized_convo)
-        embedding = response['embedding']
-        # Use 'embeddings' (plural) instead of 'embedding'
+        
+        # Validate embedding response
+        embedding = response.get('embedding', [])
+        if not embedding:
+            print(f"Failed to get a valid embedding for conversation ID {c['id']}. Skipping...")
+            continue
+        
         vector_db.add(
             ids=[str(c['id'])],
-            embeddings=[embedding],  # Corrected to 'embeddings'
+            embeddings=[embedding],
             documents=[serialized_convo]
         )
 
 def retrieve_embedding(prompt):
     response = ollama.embeddings(model='nomic-embed-text', prompt=prompt)
-    prompt_embedding = response['embedding']
+    
+    # Validate embedding before querying
+    prompt_embedding = response.get('embedding', [])
+    if not prompt_embedding:
+        raise ValueError(f"Failed to get a valid embedding for prompt: {prompt}")
     
     # Assuming collection already exists
     vector_db = client.get_collection(name='conversations')
@@ -63,7 +71,6 @@ def stream_response(prompt):
     convo.append({'role': 'user', 'content': prompt})
     response = ''
     
-    # Streaming response from the model
     stream = ollama.chat(model='llama3', messages=convo, stream=True)
 
     print('\nASSISTANT:')
@@ -79,11 +86,9 @@ def stream_response(prompt):
 while True:
     prompt = input('User >\n ')
     
-    # Retrieve the best context based on the embedding
-    context = retrieve_embedding(prompt=prompt)
-    
-    # Format the prompt with the retrieved context
-    prompt = f'USER PROMPT:{prompt} \nCONTEXT FROM EMBEDDING: {context}'
-    
-    # Stream the assistant's response
-    stream_response(prompt=prompt)
+    try:
+        context = retrieve_embedding(prompt=prompt)
+        prompt = f'USER PROMPT:{prompt} \nCONTEXT FROM EMBEDDING: {context}'
+        stream_response(prompt=prompt)
+    except ValueError as e:
+        print(f"Error: {e}")

@@ -81,12 +81,10 @@ def stream_response(prompt):
 # Main loop for user input and interaction
 while True:
     prompt = input('User >\n ')
-    
-    # Retrieve the best context based on the embedding
-    context = retrieve_embedding(prompt=prompt)
-    
-    # Format the prompt with the retrieved context
-    prompt = f'USER PROMPT:{prompt} \nCONTEXT FROM EMBEDDING: {context}'
-    
-    # Stream the assistant's response
-    stream_response(prompt=prompt)
+
+    try:
+        context = retrieve_embedding(prompt=prompt)
+        prompt = f'USER PROMPT:{prompt} \nCONTEXT FROM EMBEDDING: {context}'
+        stream_response(prompt=prompt)
+    except ValueError as e:
+        print(f"Error: {e}")
