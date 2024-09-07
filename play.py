@@ -59,7 +59,7 @@ def stream_response(prompt):
     response = ''
     
     # Streaming response from the model
-    stream = ollama.chat(model='reflection', messages=convo, stream=True)
+    stream = ollama.chat(model='llama3', messages=convo, stream=True)
 
     print('\nASSISTANT:')
     for chunk in stream:

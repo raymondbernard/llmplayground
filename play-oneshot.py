@@ -15,7 +15,7 @@ message_history = [
 
     {'id': 2,
     'prompt': """What color eyes does Ray Bernard have?""",
-     'response': 'his eyes are bluer'},
+     'response': 'his eyes are blue'},
      
     {'id': 3,
      'prompt': 'User: What is my name',
